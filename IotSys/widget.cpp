@@ -43,21 +43,6 @@ Widget::Widget(QWidget *parent)
     AccessKeyId = ui->lineInfAcsKeyId->text();
     IotInstanceId = ui->lineInfIotInstId->text();
     ProductKey = ui->lineInfPrdKey->text();
-/*    QList<QHostAddress> ipList = QNetworkInterface().allAddresses();
-    localIP = "127.0.0.1";
-    foreach(QHostAddress ip,ipList)
-    {
-        if(ip.toString().contains("192.168"))
-        {
-            localIP = ip.toString();
-            break;
-        }
-    }
-    ui->labelIP->setText("ip: " + localIP);
-    m_server = new QtServer(this);
-    connect(m_server,&QtServer::ipr1,this,[&](){localStatus |= 0x02;});
-    connect(m_server,&QtServer::ipr1,this,[&](){localStatus |= 0x04;});
-    connect(m_server,&QtServer::ipr1,this,[&](){localStatus |= 0x08;});*/
     m_client = new QMqttClient(this);
     connect(m_client, &QMqttClient::stateChanged, this, &Widget::change_state_label);
     manager = new QNetworkAccessManager(this);
@@ -322,8 +307,6 @@ void Widget::post()
     char uuidString[36];
     uuid_generate(uuid);
     uuid_unparse(uuid, uuidString);
-//    qDebug()<<date;
-//    qDebug()<<uuid_str;
 
     QByteArray requestArray = "http://iot.cn-shanghai.aliyuncs.com/?";
     QByteArray requestHeader;
@@ -354,23 +337,13 @@ void Widget::post()
     requestArray.append(requestHeader);
 
     QNetworkRequest request;
-//    QSslConfiguration config;
-//    config.setPeerVerifyMode(QSslSocket::VerifyNone);
-//    config.setProtocol(QSsl::TlsV1_0);
-//    request.setSslConfiguration(config);
+
     request.setUrl(QUrl(requestArray));
 
     // 发送请求
     manager->get(request);
-//    qDebug() << requestArray;
-}
 
-//发送节点号|本机socket服务器ip地址
-/*void Widget::publish(int num)
-{   QByteArray msg = QString::number(num).toUtf8()+QString("|").toUtf8()+localIP.toUtf8();
-    m_client->publish(QString("/j07uNifPBHh/2k1000la/user/IPupload"),msg);
-    qDebug()<<msg;
-}*/
+}
 
 //解析阿里云回传的在线信息
 void Widget::postBack(QNetworkReply* reply)
@@ -397,7 +370,6 @@ void Widget::postBack(QNetworkReply* reply)
                 QJsonObject node = nodeItem.toObject();
                 devOnlineList.append(node["DeviceName"].toString());
             });
-            //qDebug()<<devOnlineList<< QDateTime::currentDateTimeUtc().toString("HH:mm:ss");;
 
             devStatus = 0x00;
             foreach (const QString &devOlName, devOnlineList) {
@@ -420,15 +392,12 @@ QByteArray Widget::HMACSha1(QByteArray key, QByteArray baseString)
 
     QByteArray innerPadding(blockSize, char(0x36)); // initialize inner padding with char "6"
     QByteArray outerPadding(blockSize, char(0x5c)); // initialize outer padding with char "quot;
-    // ascii characters 0x36 ("6") and 0x5c ("quot;) are selected because they have large
-    // Hamming distance (http://en.wikipedia.org/wiki/Hamming_distance)
 
     for (int i = 0; i < key.length(); i++) {
         innerPadding[i] = innerPadding[i] ^ key.at(i); // XOR operation between every byte in key and innerpadding, of key length
         outerPadding[i] = outerPadding[i] ^ key.at(i); // XOR operation between every byte in key and outerpadding, of key length
     }
 
-    // result = hash ( outerPadding CONCAT hash ( innerPadding CONCAT baseString ) ).toBase64
     QByteArray total = outerPadding;
     QByteArray part = innerPadding;
     part.append(baseString);
@@ -463,12 +432,6 @@ void Widget::setStatus()
         ui->labelStatus2->statusChange(devStatus&0x04,0x04,localStatus&0x04);
         ui->labelStatus3->statusChange(devStatus&0x08,0x08,localStatus&0x08);
         ui->labelStatusLocal->statusChange(devStatus&0x01,0x01);
-        /*if(((~localStatus)&devStatus)&0x02)  //mqtt在线且判断节点未收到自己的ip地址，则发送
-            publish(1);
-        if(((~localStatus)&devStatus)&0x04)
-            publish(2);
-        if(((~localStatus)&devStatus)&0x08)
-            publish(3);*/
         localStatus = 0x00;
     }
     if(chgStatus = preStatus^devStatus)
@@ -769,19 +732,6 @@ void Widget::settingCheck()
     {
         dir4.mkdir(fullpath);
     }
-/*    fullpath = QDir::currentPath()+"/src/data.db";
-    QFileInfo fileInfo2(fullpath);
-    if(!fileInfo2.isFile())
-    {
-        QSqlDatabase defdb;
-        defdb = QSqlDatabase::addDatabase("QSQLITE");
-        defdb.setDatabaseName(fullpath);
-        if (!defdb.open())
-        {
-            qDebug() << "open db failed!";
-        }
-        defdb.close();
-    }*/
 
 }
 
